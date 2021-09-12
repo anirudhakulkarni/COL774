@@ -8,13 +8,14 @@ def read_data(Xpath="data/q1/linearX.csv",Ypath="data/q1/linearY.csv"):
     Y = np.array(pd.read_csv(Ypath,header=None).values)
     X = normalize(X)
     # TODO: Do not normalize Y
-    Y = normalize(Y)
+    # Y = normalize(Y)
     return X,Y
 
 def normalize(X):
-    mean=np.mean(X)
-    std=np.var(X)**0.5
+    mean=np.mean(X,axis=0)
+    std=np.var(X,axis=0)**0.5
     X=(X-mean)/std
+    print(np.mean(X,axis=0))
     return X
 
 def augment_intecept(X):
@@ -39,13 +40,26 @@ def gradient_descent(X,Y,epsilon,alpha,max_iter):
         grad=np.dot(X.T,(H-Y))/(2*m)
         theta=theta-alpha*grad
         cost=get_cost(X,Y,theta)
-        if abs(cost_last-cost)<epsilon or iter>max_iter:
+        
+        # stopping criteria
+        if abs(cost_last-cost)<epsilon or iter>max_iter or cost<epsilon:
             converged=True
         cost_last=cost
         plotTheta.append(theta)
         plotCost.append(cost)
-    plt.scatter(X[:,1:],Y)
-    plt.plot(X[:,1:],H)
+        
+    plt.title('Linear regression')
+    plt.scatter(X[:,1:],Y,label='Given Data')
+    plt.plot(X[:,1:],H,label='Hypothesis')
+    plt.xlabel(' x ')
+    plt.ylabel(' y ')
+    plt.savefig('figs/q1_hypothesis.png')
+    plt.show()
+    plt.xlabel(' iteration ')
+    plt.ylabel(' cost ')
+    plt.title('Cost vs iteration')
+    plt.plot(plotCost,label='Cost Fucntion')
+    plt.savefig('figs/q1_cost.png')
     plt.show()
     return plotTheta,plotCost,iter
 
@@ -65,6 +79,7 @@ def plot_mesh(X1,X2,J,plotTheta,plotCost):
     plt.ion()
     
     ax=plt.axes(projection='3d')
+    ax.view_init(elev=10, azim=-32)
     ax.plot_surface(X1,X2,np.array(J),cmap=cm.coolwarm,linewidth=0, antialiased=False)
     ax.set_xlabel('theta_0')
     ax.set_ylabel('theta_1')
@@ -74,23 +89,29 @@ def plot_mesh(X1,X2,J,plotTheta,plotCost):
     for i in range(len(plotCost)):
         ax.scatter(theta1[i],theta2[i],plotCost[i],color='red')
         # TODO: Change pause time
-        # plt.pause(0.1)
+        # plt.pause(0.2)
     plt.ioff()
+    plt.savefig('figs/q1_mesh.png')
     plt.show()
 
 def plot_contour(X1,X2,J,plotTheta,plotCost):
     theta1=np.array(plotTheta)[:,0]
     theta2=np.array(plotTheta)[:,1]
     assert len(plotTheta)==len(plotCost)
-    cp=plt.contour(X1,X2,np.array(J),50)
+    cp=plt.contour(X1,X2,np.array(J),20)
     plt.ion()
     for i in range(len(plotCost)):
         plt.scatter(theta1[i],theta2[i],color='red')
         # TODO: Change pause time
-        # plt.pause(0.1)
+        # plt.pause(0.2)
     plt.ioff()
+    plt.savefig('figs/q1_contour.png')    
     plt.show()
-
+def get_accuracy(X,Y,theta):
+    Y_pred=np.dot(X,theta)
+    # Y_pred=np.where(Y_pred>0.5,1,0)
+    error=np.sum(np.abs(Y_pred-Y)/Y)/len(Y)
+    return error
 # main function
 if __name__ == "__main__":
     X,Y = read_data()
@@ -99,8 +120,9 @@ if __name__ == "__main__":
     # plot data
     plt.scatter(X,Y)
     X = augment_intecept(X)
+
     # gradient descent
-    alpha=0.3
+    alpha=0.01
     epsilon=1e-9
     plotTheta,plotCost,iter=gradient_descent(X,Y,epsilon=epsilon,alpha=alpha,max_iter=100000)
     print("Minimum Cost: ",plotCost[-1])
@@ -108,10 +130,13 @@ if __name__ == "__main__":
     print("Total iterations: ",iter)
     # print(plotTheta)
     # print(plotCost)
+    
     # plot 3D mesh
     X1,X2,J = get_matrix(20,20,Y)
     plot_mesh(X1,X2,J,plotTheta,plotCost)
     # plot contour
     plot_contour(X1,X2,J,plotTheta,plotCost)
-    # TODO: Save plots
+    # Accuracy
+    print("Accuracy: ",get_accuracy(X,Y,plotTheta[-1]))
+
 
