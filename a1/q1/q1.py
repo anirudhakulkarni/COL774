@@ -1,9 +1,10 @@
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib import cm
-
-def read_data(Xpath="data/q1/linearX.csv",Ypath="data/q1/linearY.csv"):
+import imageio
+def read_data(Xpath="../data/q1/linearX.csv",Ypath="../data/q1/linearY.csv"):
     X = np.array(pd.read_csv(Xpath,header=None).values)
     Y = np.array(pd.read_csv(Ypath,header=None).values)
     X = normalize(X)
@@ -53,21 +54,21 @@ def gradient_descent(X,Y,epsilon,alpha,max_iter):
     plt.plot(X[:,1:],H,label='Hypothesis')
     plt.xlabel(' x ')
     plt.ylabel(' y ')
-    plt.savefig('figs/q1_hypothesis.png')
+    plt.savefig('assets/q1_hypothesis.png')
     plt.show()
     plt.xlabel(' iteration ')
     plt.ylabel(' cost ')
     plt.title('Cost vs iteration')
     plt.plot(plotCost,label='Cost Fucntion')
-    plt.savefig('figs/q1_cost.png')
+    plt.savefig('assets/q1_cost.png')
     plt.show()
     return plotTheta,plotCost,iter
 
 def get_matrix(x1_size,x2_size,Y):
 
     # TODO: Adjust parameters before final submission
-    theta1sample = np.linspace(-1,1,x1_size)
-    theta2sample = np.linspace(0,1,x2_size)
+    theta1sample = np.linspace(0,2,x1_size)
+    theta2sample = np.linspace(-1,1,x2_size)
     X1,X2 = np.meshgrid(theta1sample,theta2sample)
     J = np.asmatrix(np.zeros((x1_size,x2_size),dtype=float))
     for i in range(len(X1)):
@@ -75,37 +76,70 @@ def get_matrix(x1_size,x2_size,Y):
             J[i,j] = get_cost(X,Y,[[X1[i][j]],[X2[i][j]]])
     return X1,X2,J
 
-def plot_mesh(X1,X2,J,plotTheta,plotCost):
+def plot_mesh(X1,X2,J,plotTheta,plotCost,gif=False):
     plt.ion()
     
     ax=plt.axes(projection='3d')
-    ax.view_init(elev=10, azim=-32)
+    ax.view_init(elev=-13, azim=59)
     ax.plot_surface(X1,X2,np.array(J),cmap=cm.coolwarm,linewidth=0, antialiased=False)
     ax.set_xlabel('theta_0')
     ax.set_ylabel('theta_1')
     ax.set_zlabel('cost')
     theta1=np.array(plotTheta)[:,0]
     theta2=np.array(plotTheta)[:,1]
+    filenames=[]
     for i in range(len(plotCost)):
-        ax.scatter(theta1[i],theta2[i],plotCost[i],color='red')
-        # TODO: Change pause time
-        # plt.pause(0.2)
+        if i%10==0:
+            ax.scatter(theta1[i],theta2[i],plotCost[i],color='red')
+            # TODO: Change pause time
+            plt.pause(0.02)
+            if gif:
+                filename='assets/q1_'+str(i)+'.png'
+                filenames.append(filename)   
+                plt.savefig(filename)
+    # build gif
+    with imageio.get_writer('mesh.gif', mode='I') as writer:
+        for filename in filenames:
+            image = imageio.imread(filename)
+            writer.append_data(image)
+            
+    # Remove files
+    for filename in set(filenames):
+        os.remove(filename)
     plt.ioff()
-    plt.savefig('figs/q1_mesh.png')
+    plt.savefig('assets/q1_mesh.png')
     plt.show()
 
-def plot_contour(X1,X2,J,plotTheta,plotCost):
+def plot_contour(X1,X2,J,plotTheta,plotCost,gif=False):
     theta1=np.array(plotTheta)[:,0]
     theta2=np.array(plotTheta)[:,1]
     assert len(plotTheta)==len(plotCost)
     cp=plt.contour(X1,X2,np.array(J),20)
     plt.ion()
+    filenames=[]
     for i in range(len(plotCost)):
-        plt.scatter(theta1[i],theta2[i],color='red')
+        if i%10==0:
+            plt.scatter(theta1[i],theta2[i],color='red')
         # TODO: Change pause time
-        # plt.pause(0.2)
+            plt.pause(0.02)
+            if gif:
+                filename='assets/q1_'+str(i)+'.png'
+                filenames.append(filename)   
+                plt.savefig(filename)
+    # build gif
+    with imageio.get_writer('contour.gif', mode='I') as writer:
+        for filename in filenames:
+            image = imageio.imread(filename)
+            writer.append_data(image)
+            
+    # Remove files
+    for filename in set(filenames):
+        os.remove(filename)
+            
     plt.ioff()
-    plt.savefig('figs/q1_contour.png')    
+    plt.xlabel('theta_0')
+    plt.ylabel('theta_1')
+    plt.savefig('assets/q1_contour.png')    
     plt.show()
 def get_accuracy(X,Y,theta):
     Y_pred=np.dot(X,theta)
@@ -122,9 +156,9 @@ if __name__ == "__main__":
     X = augment_intecept(X)
 
     # gradient descent
-    alpha=0.01
+    alpha=0.1
     epsilon=1e-9
-    plotTheta,plotCost,iter=gradient_descent(X,Y,epsilon=epsilon,alpha=alpha,max_iter=100000)
+    plotTheta,plotCost,iter=gradient_descent(X,Y,epsilon=epsilon,alpha=alpha,max_iter=500)
     print("Minimum Cost: ",plotCost[-1])
     print("Minimum Cost achieved at: ",plotTheta[-1])
     print("Total iterations: ",iter)
