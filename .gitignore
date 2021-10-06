@@ -1,0 +1,11 @@
+# datasets
+*.zip
+*.tar.gz
+*.tgz
+*.tar
+*.json
+*.csv
+*.xlsx
+*.xls
+*.tsv
+*.npy

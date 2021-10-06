@@ -1,0 +1,15 @@
+Training time: 45.684452056884766
+Number of support vectors: 158
+Bias: 1.3774848367808885
+Accuracy on train data: 1.0
+F1 score on train data: [1. 1.]
+Macro F1 score on train data: 1.0
+Confusion matrix on train data:
+2000 0 
+0 2000 
+Accuracy on test data: 0.9884633133364098
+F1 score on test data: [0.98779893 0.98905908]
+Macro F1 score on test data: 0.9884290036341579
+Confusion matrix on test data:
+1012 20 
+5 1130 

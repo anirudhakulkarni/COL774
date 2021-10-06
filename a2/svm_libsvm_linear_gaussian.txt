@@ -1,0 +1,6 @@
+Linear LIBSVM Training time: 0.5792617797851562
+Gaussian LIBSVM Training time: 2.123901844024658
+Linear LIBSVM train accuraccy: 100.0
+Linear LIBSVM test accuraccy: 99.03091832025842
+Gaussian LIBSVM train accuraccy: 99.97500000000001
+Gaussian LIBSVM test accuraccy: 99.58467928011075
