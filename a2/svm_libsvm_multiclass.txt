@@ -1,4 +1,4 @@
-Train time: 37.35985779762268
+Train time: 38.92826557159424
 Multiclass LIBSVM Training accuracy: 1.0
 Multiclass LIBSVM Test accuracy: 1.0
 Multiclass LIBSVM Training confusion matrix: 

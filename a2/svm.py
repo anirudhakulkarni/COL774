@@ -1,6 +1,5 @@
 # imports
 import collections
-from os import supports_effective_ids
 import sys
 import numpy as np
 import time
@@ -147,16 +146,16 @@ def predict(W,b,X_D,Y_D):
 # functions for part 1
 def get_parameters_linear(d_X,d_Y,C):
     d_Y=d_Y.astype('float')
-    A=matrix(d_Y).T
-    b=matrix(0.0)
-    h=matrix(np.zeros((len(d_X)*2,1)))
-    for i in range(len(d_X),2*len(d_X)):
-        h[i,0]=C
-    G=matrix(np.zeros((len(d_X)*2,len(d_X))))
-    for i in range(len(d_X)):
-        G[i,i]=-1
-        G[i+len(d_X),i]=1
-    q=matrix(-np.ones((len(d_X),1)))
+    A=matrix(d_Y).T#
+    b=matrix(0.0)#
+    h=matrix(np.zeros((len(d_X)*2,1)))#
+    for i in range(len(d_X),2*len(d_X)):#
+        h[i,0]=C#
+    G=matrix(np.zeros((len(d_X)*2,len(d_X))))#
+    for i in range(len(d_X)):#
+        G[i,i]=-1#
+        G[i+len(d_X),i]=1#
+    q=matrix(-np.ones((len(d_X),1)))#
     P=matrix(np.zeros((len(d_X),len(d_X))))
     for i in range(len(d_X)):
         for j in range(len(d_X)):
@@ -251,9 +250,7 @@ def get_parameters_gaussian_kernel(d_X,d_Y,C,gamma):
     # h=matrix(np.zeros((len(d_X)*2,1)))
     # for i in range(len(d_X),2*len(d_X)):
     #     h[i,0]=C
-    h1=np.zeros(m)
-    h2=np.ones(m)*C
-    h=matrix(np.hstack((h1,h2)))
+    h=matrix(np.hstack((np.zeros(m),np.ones(m)*C)))
     # G=matrix(np.zeros((len(d_X)*2,len(d_X))))
     # for i in range(len(d_X)):
     #     G[i,i]=-1
@@ -278,8 +275,6 @@ def get_parameters_gaussian_kernel(d_X,d_Y,C,gamma):
     # from scipy.spatial.distance import pdist, squareform
     # pairwise_dists = squareform(pdist(d_X, 'euclidean'))
     # kernel = np.exp(-gamma*pairwise_dists**2 )
-
-    print("Starting P")
     # P=matrix(np.zeros((len(d_X),len(d_X))))
     P=matrix(d_Y*d_Y.T*kernel)
     # for i in range(len(d_X)):
@@ -287,22 +282,35 @@ def get_parameters_gaussian_kernel(d_X,d_Y,C,gamma):
     #         P[i,j]=kernel[i,j]
     #         P[i,j]*=d_Y[i]*d_Y[j]
     return P,q,G,h,A,b
+def get_parameters(d_X,d_Y,C,gamma,kernel):
+    m,n=d_X.shape
+    A=matrix(d_Y,(1,m))
+    b=matrix(0.0)
+    h=matrix(np.hstack((np.zeros(m),np.ones(m)*C)))
+    G=matrix(np.vstack((-1.0*np.eye(m),np.eye(m))))
+    q=matrix(-1.0*np.ones(m))
+    if kernel=="linear":
+        temp=d_Y*d_X
+        P=np.dot(temp,temp.T)
+    else:
+        d_X_2=np.sum(np.multiply(d_X,d_X),axis=1,keepdims=True)
+        kernel=d_X_2-2*np.matmul(d_X,d_X.T)+d_X_2.T
+        kernel=np.power(np.exp(-gamma),kernel)
+        P=matrix(d_Y*d_Y.T*kernel)
+    return P,q,G,h,A,b
+
 def gaussian_cvxopt(train_path,test_path):
-    # read data
-    train_data=np.genfromtxt(train_path,delimiter=',')
-    X_train=train_data[:,0:784]/255
-    Y_train=train_data[:,784].reshape(len(train_data),1)
-    test_data=np.genfromtxt(test_path,delimiter=',')
-    X_test=test_data[:,0:784]/255
-    Y_test=test_data[:,784].reshape(len(test_data),1)
-    
+    X_train,Y_train=read_data(train_path)
+    X_test,Y_test=read_data(test_path)
     # get subset of data relevant to digit d and return X and Y
     d_X_train,d_Y_train=get_d_X_Y(X_train,Y_train,digit1,digit2)
     d_X_test,d_Y_test=get_d_X_Y(X_test,Y_test,digit1,digit2)
+    print("Collecting parameters ...")
     # get parameters
     d_Y_train=d_Y_train.reshape(len(d_Y_train),1)
-    P,q,G,h,A,b=get_parameters_gaussian_kernel(d_X_train,d_Y_train,C,gamma)
-    print("parameter generation complete")
+    P,q,G,h,A,b=get_parameters(d_X_train,d_Y_train,C,gamma,"gaussian")
+    print(P.size,q.size,G.size,h.size,A.size,b.size)
+    print("Training ...")
     # solve
     # measure time to solve the problem
     m,n=d_X_train.shape
@@ -313,8 +321,8 @@ def gaussian_cvxopt(train_path,test_path):
     supp_indices=np.arange(len(alpha))[supp_flag]
     alpha=alpha[supp_flag]
     supp_vec=d_X_train[supp_flag]
-    
     supp_vec_y=d_Y_train[supp_flag]
+    print("Predicting on test data ...")
     m=len(d_X_test)
     pred=np.zeros(m)
     for i in range(m):
@@ -324,15 +332,16 @@ def gaussian_cvxopt(train_path,test_path):
             s+=alpha_i*supp_vec_y_i*np.exp(-gamma*np.linalg.norm(d_X_test[i]-supp_vec_i)**2)
     
         pred[i]=s
-    # calculate accuracy
+    print("Calculating accuracy ...")
     acc=0
     pred=np.sign(pred)
     for i in range(len(pred)):
         if d_Y_test[i]==pred[i]:
             acc+=1
     print(acc/float(len(d_Y_test)))
-    return
+    
     print("solving time:",end-start)
+    return
     nSV=0
     d_X_train_mul=np.sum(np.multiply(d_X_train,d_X_train),axis=1)
     d_X_test_mul=np.sum(np.multiply(d_X_test,d_X_test),axis=1)
@@ -691,6 +700,64 @@ def cross_validation(train_path):
         print("Cross validation LIBSVM Test accuracy: "+str(accu_test))
         # write results to "svm_libsvm_
 
+
+def get_accuracy(Y,pred):
+    accu=0
+    for i in range(len(Y)):
+        if Y[i]==pred[i]:
+            accu+=1
+    accu/=len(Y)
+    return accu
+
+class SVM:
+    def __init__(self,kernel,C,gamma):
+        self.kernel=kernel
+        self.C=C
+        self.gamma=gamma
+    
+    def train(self,X,Y):
+        # get parameters
+        m,n=X.shape
+        if self.kernel=="linear":
+            P,q,G,h,A,b = get_parameters_linear(X,Y,self.C)
+        else:
+            P,q,G,h,A,b=get_parameters_gaussian_kernel(X,Y,self.C,self.gamma)
+        # solve QP
+        start=time.time()
+        alpha=np.ravel(solve_cvxopt(P,q,G,h,A,b)).reshape(m,1)
+        end=time.time()
+        # get support vectors
+        self.supp_flag=(alpha>threashold).ravel()
+        self.supp_indices=np.arange(len(alpha))[self.supp_flag]
+        self.alpha=alpha[self.supp_flag]
+        self.supp_vec=d_X_train[self.supp_flag]
+        self.supp_vec_y=d_Y_train[self.supp_flag]
+        if self.kernel=="linear":
+            self.w=np.sum(self.alpha*self.supp_vec*self.supp_vec_y,axis=0,keepdims=True).T
+            temp0=np.dot(X,self.w)
+            minsofar=1e10
+            maxsofar=-1e10
+            for i in range(len(temp0)):
+                if Y[i]==1:
+                    if temp0[i]<minsofar:
+                        minsofar=temp0[i]
+                else:
+                    if temp0[i]>maxsofar:
+                        maxsofar=temp0[i]
+            b=-(minsofar+maxsofar)/2
+
+
+    def predict(self,X):
+        print("Predicting ...")
+        if self.kernel=="linear":
+            return np.sign(np.dot(X,self.w)+self.b)
+        m=len(X)
+        pred=np.zeros(m)
+        for i in range(m):
+            for alpha_i, supp_vec_i, supp_vec_y_i in zip(self.alpha, self.supp_vec,self.supp_vec_y):
+                pred[i]+=alpha_i*supp_vec_y_i*np.exp(-self.gamma*np.linalg.norm(X[i]-supp_vec_i)**2)        
+        return np.sign(pred)
+
 # main function
 if __name__ == '__main__':
     # get command line arguments
@@ -700,8 +767,25 @@ if __name__ == '__main__':
     part_num=sys.argv[4]
     # binary classification
     if class_num==0:
+        # read data
+        print("Reading data ...")
+        X_train,Y_train=read_data(train_path)
+        X_test,Y_test=read_data(test_path)
+        # get subset of data relevant to digit d and return X and Y
+        d_X_train,d_Y_train=get_d_X_Y(X_train,Y_train,digit1,digit2)
+        d_X_test,d_Y_test=get_d_X_Y(X_test,Y_test,digit1,digit2)
+        print("Training SVM ...")
         if part_num=='a':
             linear_cvxopt(train_path,test_path)
+            linear_svm=SVM("linear",C,gamma)
+            linear_svm.train(d_X_train,d_Y_train)
+
+            pred=linear_svm.predict(d_X_train)
+            accu=get_accuracy(d_Y_train,pred)
+            print(accu)
+            pred=linear_svm.predict(d_X_test)
+            accu=get_accuracy(d_Y_test,pred)
+            print(accu)
             # tasks:
             # 1. obtain support vectors and save to file
             # 2. print bias
@@ -709,17 +793,63 @@ if __name__ == '__main__':
             # 4. print validation accuracy
             # 5. print test accuracy
             # 6. print time required
-    # exit()    
         elif part_num=='b':
-            print("Starting gaussian cvxopt")
             gaussian_cvxopt(train_path,test_path)
+            gaussian_svm=SVM("gaussian",C,gamma)
+            gaussian_svm.train(d_X_train,d_Y_train)
+
+            pred=gaussian_svm.predict(d_X_train)
+            print(pred)
+            print(d_Y_train)
+            accu=get_accuracy(d_Y_train,pred)
+            print(accu)
+            pred=gaussian_svm.predict(d_X_test)
+            accu=get_accuracy(d_Y_test,pred)
+            print(accu)
             # tasks:
             # 1. obtain support vectors and save to file
             # 2. print validation accuracy
             # 3. print test accuracy
             # 4. print time required
         elif part_num=='c':
-            libsvm_linear_gaussian(train_path,test_path)
+            # libsvm_linear_gaussian(train_path,test_path)
+            problem=svm_problem(d_Y_train,d_X_train)
+            # linear kernel
+            linear_param=svm_parameter('-s 0 -t 0 -c '+str(C))
+            start_lin=time.time()
+            linear_model=svm_train(problem,linear_param)
+            end_lin=time.time()
+            # predict on train data
+            linear_pred_lbl_train,linear_pred_acc_train,linear_pred_val=svm_predict(d_Y_train,d_X_train,linear_model)
+            # predict on test data
+            linear_pred_lbl_test,linear_pred_acc_test,linear_pred_val=svm_predict(d_Y_test,d_X_test,linear_model)
+            # gaussian kernel
+            gaussian_param=svm_parameter('-s 0 -t 2 -g '+str(gamma)+' -c '+str(C))
+            start_gauss=time.time()
+            gaussian_model=svm_train(problem,gaussian_param)
+            end_gauss=time.time()
+            # predict on train data
+            gaussian_pred_lbl_train,gaussian_pred_acc_train,gaussian_pred_val=svm_predict(d_Y_train,d_X_train,gaussian_model)
+            # predict on test data
+            gaussian_pred_lbl_test,gaussian_pred_acc_test,gaussian_pred_val=svm_predict(d_Y_test,d_X_test,gaussian_model)
+            # write results to "svm_libsvm_linear_gaussian.txt"
+            with open("svm_libsvm_linear_gaussian.txt", "w") as f:
+                f.write("Linear LIBSVM Training time: "+str(end_lin-start_lin)+"\n")
+                f.write("Gaussian LIBSVM Training time: "+str(end_gauss-start_gauss)+"\n")
+                f.write("Linear LIBSVM train accuraccy: "+str(linear_pred_acc_train[0])+"\n") 
+                f.write("Linear LIBSVM test accuraccy: "+str(linear_pred_acc_test[0])+"\n")
+                f.write("Gaussian LIBSVM train accuraccy: "+str(gaussian_pred_acc_train[0])+"\n")
+                f.write("Gaussian LIBSVM test accuraccy: "+str(gaussian_pred_acc_test[0])+"\n")
+            # save confusion matrix plots
+            conf_matrix_train_lin=confusion_matrix(d_Y_train,linear_pred_lbl_train)
+            conf_matrix_test_lin=confusion_matrix(d_Y_test,linear_pred_lbl_test)
+            draw_confusion(conf_matrix_train_lin,"_libsvm_linear_train")
+            draw_confusion(conf_matrix_test_lin,"_libsvm_linear_test")
+            conf_matrix_train_gauss=confusion_matrix(d_Y_train,gaussian_pred_lbl_train)
+            conf_matrix_test_gauss=confusion_matrix(d_Y_test,gaussian_pred_lbl_test)
+            draw_confusion(conf_matrix_train_gauss,"_libsvm_gaussian_train")
+            draw_confusion(conf_matrix_test_gauss,"_libsvm_gaussian_test")
+
             # tasks:
             # 1. obtain support vectors and save to file
             # 2. print bias

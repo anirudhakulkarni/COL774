@@ -4,6 +4,7 @@
 # bash run.sh 2 "./dataset/train.csv" "./dataset/test.csv" d
 # bash run.sh 1 "./dataset/Music_Review_train.json" "./dataset/Music_Review_test.json" g 
 # extract arguments
+# python svm-final.py "./dataset/train_.csv" "./dataset/test_.csv" 1 a 
 question=$1
 train_path=$2
 test_path=$3
@@ -13,5 +14,5 @@ if [ "$question" == "1" ];then
 elif [ "$question" == "2" ];then
     class=$4
     part_num=$5
-    python3 svm.py $train_path $test_path $class $part_num
+    python3 svm-final.py $train_path $test_path $class $part_num
 fi
