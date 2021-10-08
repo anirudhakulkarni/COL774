@@ -122,7 +122,7 @@ if __name__ == '__main__':
     test_sum=1
     train_prev_tr_t_q1=1
     test_prev_tr_t_q1=1
-    ngram=2
+    ngram=3
     lemma=0
     if part_num=='a':
         # read training data

@@ -1,0 +1,62 @@
+C: 10 
+---------------------
+Fold: 1
+Accuracy = 97.2% (3888/4000) (classification)
+Fold: 2
+Accuracy = 97.45% (3898/4000) (classification)
+Fold: 3
+Accuracy = 97.65% (3906/4000) (classification)
+Fold: 4
+Accuracy = 97.125% (3885/4000) (classification)
+Fold: 5
+Accuracy = 97.175% (3887/4000) (classification)   
+C: 5
+---------------------
+Fold: 1
+Accuracy = 97.2% (3888/4000) (classification)
+Fold: 2
+Accuracy = 97.45% (3898/4000) (classification)
+Fold: 3
+Accuracy = 97.65% (3906/4000) (classification)
+Fold: 4
+Accuracy = 97.125% (3885/4000) (classification)
+Fold: 5
+Accuracy = 97.175% (3887/4000) (classification)
+C: 1---------------------
+Fold: 1
+Accuracy = 97.125% (3885/4000) (classification)
+Fold: 2
+Accuracy = 97.25% (3890/4000) (classification)
+Fold: 3
+Accuracy = 97.625% (3905/4000) (classification)
+Fold: 4
+Accuracy = 97.05% (3882/4000) (classification)
+Fold: 5
+Accuracy = 97.1% (3884/4000) (classification)
+C: 0.001 
+
+C: 0.001
+---------------------                                                                                                   
+Fold: 1
+Accuracy = 9.325% (373/4000) (classification)
+Fold: 2
+Accuracy = 17.075% (683/4000) (classification)
+Fold: 3
+Accuracy = 9.275% (371/4000) (classification)
+Fold: 4
+Accuracy = 16.525% (661/4000) (classification)
+Fold: 5
+Accuracy = 9.275% (371/4000) (classification) 
+
+C: 1e-05
+---------------------
+Fold: 1
+Accuracy = 9.325% (373/4000) (classification)
+Fold: 2
+Accuracy = 17.075% (683/4000) (classification)
+Fold: 3
+Accuracy = 9.275% (371/4000) (classification)
+Fold: 4
+Accuracy = 16.525% (661/4000) (classification)
+Fold: 5
+Accuracy = 9.275% (371/4000) (classification)
