@@ -1,12 +1,13 @@
-from os import sep
-from numpy.lib.function_base import median
 import preprocess_dt as ppd
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import pickle
+# confusion matrix
+from sklearn.metrics import confusion_matrix, f1_score
 # global variables
 index = 0
+depth = 6
 # constants
 
 
@@ -23,6 +24,7 @@ class node:
         self.attribute = attribute
         self.isLeaf = isLeaf
         self.children = []
+        self.target = subdata.iloc[:, -1].value_counts().idxmax()
         if isLeaf:
             self.create_leaf(target)
         print("************************************************")
@@ -45,30 +47,24 @@ class node:
 
 
 class DecisionTree():
-    def __init__(self, train_path="bank_dataset/bank_train.csv", test_path="bank_dataset/bank_test.csv", validation_path="bank_dataset/bank_val.csv", onehot=False):
-        self.train_data, self.test_data, self.validation_data = self.get_data(
-            train_path, test_path, validation_path, onehot)
+    def __init__(self, train_path="bank_dataset/bank_train.csv", onehot=False):
+        self.train_data = self.get_data(train_path, onehot)
         self.root = None
-        self.train_pred = None
-        self.test_pred = None
-        self.validation_pred = None
 
-    def get_data(self, train_path, test_path, validation_path, onehot):
+    def set_data(self, test_path="bank_dataset/bank_train.csv", validation_path="bank_dataset/bank_val.csv", onehot=False):
+        self.test_data = self.get_data(test_path, onehot)
+        self.validation_data = self.get_data(validation_path, onehot)
+
+    def get_data(self, train_path, onehot):
         if onehot:
             train_data = pd.read_csv(train_path, sep=';')
-            test_data = pd.read_csv(test_path, sep=';')
-            validation_data = pd.read_csv(validation_path, sep=';')
             train_data = ppd.one_hot_encoding(train_data)
-            test_data = ppd.one_hot_encoding(test_data)
-            validation_data = ppd.one_hot_encoding(validation_data)
         else:
             train_data = pd.read_csv(train_path, sep=';')
-            test_data = pd.read_csv(test_path, sep=';')
-            validation_data = pd.read_csv(validation_path, sep=';')
-        return train_data, test_data, validation_data
+        return train_data
 
     def train(self):
-        self.root = self._build_tree(self.train_data, 5)
+        self.root = self._build_tree(self.train_data, depth)
         pass
 
     def save(self):
@@ -169,44 +165,56 @@ class DecisionTree():
     def test(self):
         # self.test_data is data set
         self.test_data['pred'] = None
-        print(self.root)
-        print("Starting----------------------------------------")
-        print(self._predict(self.test_data, self.root))
-        print(self.test_data['pred'])
-        print(self.test_data['y'])
+        self._predict(self.test_data, self.root)
+        # print(self.test_data['pred'])
+        # print(self.test_data['y'])
         # get accuracy
         acc = 0
+        # print confusion matrix
         for i in range(len(self.test_data)):
-            if self.test_data.loc['pred', i] == self.test_data.loc['y', i]:
+            if self.test_data.loc[i, 'pred'] == self.test_data.loc[i, 'y']:
                 acc += 1
         acc = acc/len(self.test_data)
+        print("Accuracy:", acc)
+        print(len(self.test_data))
+        # print all rows where pred is None
+        # print(np.unique(self.test_data['job']))
+        # print(self.test_data.loc[self.test_data['pred'].isnull()])
+        # print(self.test_data.iloc[:, -1].value_counts())
+        # print(self.test_data.iloc[:, -2].value_counts())
+        conf = confusion_matrix(self.test_data['y'], self.test_data['pred'])
+        print(conf)
+        # f1 score
+        f1 = f1_score(
+            self.test_data['y'], self.test_data['pred'], average='weighted')
+        print("F1 score:", f1)
+
+        # print(self.test_data.iloc[:, -1].value_counts())
+        # print(self.test_data.iloc[:, -2].value_counts())
         pass
 
     def _predict(self, test_data, root):
         # predict the target
         if root is None:
-            print("root is None")
-            return test_data
+            return
         if root.isLeaf:
-            print("LEAF")
             # select indices in self.test_data based on test_data
-            test_data['pred'] = root.target
-
-            # test_data['pred']=root.target
+            self.test_data.at[test_data.index, 'pred'] = root.target
         else:
             for child in root.children:
                 if child[2] == "=":
-                    test_data = self._predict(
+                    self._predict(
                         test_data.loc[test_data[root.attribute] == child[1]], child[0])
                 else:
                     if child[2] == "<=":
-                        print(test_data)
-                        test_data = self._predict(
+                        # print(test_data)
+                        self._predict(
                             test_data.loc[test_data[root.attribute] <= child[1]], child[0])
                     else:
-                        test_data = self._predict(
+                        # print(test_data[root.attribute])
+                        self._predict(
                             test_data.loc[test_data[root.attribute] > child[1]], child[0])
-        return test_data
+        return
 
     def _entropy(self, target, type):
         # Calculate the entropy
@@ -253,13 +261,19 @@ class DecisionTree():
 
 
 if __name__ == '__main__':
-    # dt = DecisionTree(onehot=True)
-    # # dt.get_data(train_path=)
-    # dt.train()
-    # save_object(dt, 'dt.pkl')
-    with open('dt.pkl', 'rb') as inp:
+    depth = 25
+    onehot = True
+    dt = DecisionTree(onehot=onehot)
+    # dt.get_data(train_path=)
+    dt.train()
+    save_object(dt, 'dt-'+str(depth)+"-"+str(onehot)+'.pkl')
+    with open('dt-'+str(depth)+"-"+str(onehot)+'.pkl', 'rb') as inp:
         dt = pickle.load(inp)
-
+    dt.set_data(onehot=onehot, test_path="bank_dataset/bank_train.csv")
+    dt.test()
+    dt.set_data(onehot=onehot, test_path="bank_dataset/bank_test.csv")
+    dt.test()
+    dt.set_data(onehot=onehot, test_path="bank_dataset/bank_val.csv")
     dt.test()
     dt.evaluate()
 
