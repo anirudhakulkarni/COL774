@@ -12,3 +12,6 @@
 *.model
 
 *.data
+"\n"
+\n
+*.pkl
