@@ -1,13 +1,16 @@
+import sys
 import preprocess_dt as ppd
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import pickle
+import csv
 # confusion matrix
 from sklearn.metrics import confusion_matrix, f1_score
 # global variables
-index = 0
+index = 1
 depth = 6
+onehot = False
 # constants
 
 
@@ -50,14 +53,18 @@ class DecisionTree():
     def __init__(self, train_path="bank_dataset/bank_train.csv", onehot=False):
         self.train_data = self.get_data(train_path, onehot)
         self.root = None
+        self.totalNodes = 1
 
     def set_data(self, test_path="bank_dataset/bank_train.csv", validation_path="bank_dataset/bank_val.csv", onehot=False):
         self.test_data = self.get_data(test_path, onehot)
         self.validation_data = self.get_data(validation_path, onehot)
+        self.test_path = test_path
 
     def get_data(self, train_path, onehot):
+
         if onehot:
             train_data = pd.read_csv(train_path, sep=';')
+            print("ONE HOT ENABLED")
             train_data = ppd.one_hot_encoding(train_data)
         else:
             train_data = pd.read_csv(train_path, sep=';')
@@ -96,6 +103,7 @@ class DecisionTree():
         best_feature = self._choose_best_feature(data)
         tree = node(index, data, best_feature)
         index += 1
+        self.totalNodes += 1
         if data[best_feature].dtype == 'object':
             feature_values = np.unique(data[best_feature])
             for value in feature_values:
@@ -133,7 +141,7 @@ class DecisionTree():
                     y_1 = len(sub_data.loc[sub_data.iloc[:, -1] == 'no'])
                     y_0 = len(sub_data)-y_1
                     if y_1 == 0 or y_0 == 0:
-                        continue
+                        return feature
                     frac = y_1/len(sub_data)
                     temp += len(sub_data)/len(data)*(-1) * \
                         (frac*np.log2(frac)+((1-frac)*np.log2(1-frac)))
@@ -148,8 +156,12 @@ class DecisionTree():
                 y_0_1 = len(sub_data1)-y_1_1
                 y_1_2 = len(sub_data2.loc[sub_data2.iloc[:, -1] == 'no'])
                 y_0_2 = len(sub_data2)-y_1_2
-                if len(sub_data1) == 0 or len(sub_data2) == 0:
-                    temp = 0
+                if len(sub_data2) == 0:
+                    if y_1_1 == 0 or y_0_1 == 0:
+                        return feature
+                    frac = y_1_1/len(sub_data1)
+                    temp = len(sub_data1)/len(data)*(-1) * \
+                        (frac*np.log2(frac)+((1-frac)*np.log2(1-frac)))
                 elif y_1_1 == 0 or y_0_1 == 0 or y_1_2 == 0 or y_0_2 == 0:
                     return feature
                 else:
@@ -157,14 +169,14 @@ class DecisionTree():
                     frac_2 = y_1_2/len(sub_data2)
                     temp = len(sub_data1)/len(data)*(-1)*(frac_1*np.log2(frac_1)+((1-frac_1)*np.log2(1-frac_1)))+len(
                         sub_data2)/len(data)*(-1)*(frac_2*np.log2(frac_2)+((1-frac_2)*np.log2(1-frac_2)))
-                if best_mutual_information is None or temp > best_mutual_information:
+                if best_mutual_information is None or temp < best_mutual_information:
                     best_mutual_information = temp
                     best_feature = feature
         return best_feature
 
     def test(self):
         # self.test_data is data set
-        self.test_data['pred'] = None
+        self.test_data['pred'] = 'no'
         self._predict(self.test_data, self.root)
         # print(self.test_data['pred'])
         # print(self.test_data['y'])
@@ -175,20 +187,20 @@ class DecisionTree():
             if self.test_data.loc[i, 'pred'] == self.test_data.loc[i, 'y']:
                 acc += 1
         acc = acc/len(self.test_data)
-        print("Accuracy:", acc)
-        print(len(self.test_data))
         # print all rows where pred is None
         # print(np.unique(self.test_data['job']))
         # print(self.test_data.loc[self.test_data['pred'].isnull()])
         # print(self.test_data.iloc[:, -1].value_counts())
         # print(self.test_data.iloc[:, -2].value_counts())
         conf = confusion_matrix(self.test_data['y'], self.test_data['pred'])
-        print(conf)
         # f1 score
         f1 = f1_score(
             self.test_data['y'], self.test_data['pred'], average='weighted')
-        print("F1 score:", f1)
-
+        # append to csv
+        with open('dt-results-t.csv', 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow([depth, self.totalNodes, onehot, self.test_path[18:-4],
+                            conf[0][0], conf[0][1], conf[1][0], conf[1][1], acc,  f1])
         # print(self.test_data.iloc[:, -1].value_counts())
         # print(self.test_data.iloc[:, -2].value_counts())
         pass
@@ -261,14 +273,17 @@ class DecisionTree():
 
 
 if __name__ == '__main__':
-    depth = 25
-    onehot = True
-    dt = DecisionTree(onehot=onehot)
-    # dt.get_data(train_path=)
-    dt.train()
-    save_object(dt, 'dt-'+str(depth)+"-"+str(onehot)+'.pkl')
-    with open('dt-'+str(depth)+"-"+str(onehot)+'.pkl', 'rb') as inp:
-        dt = pickle.load(inp)
+    depth = int(sys.argv[1])
+    onehot = sys.argv[2] == "True"
+    print(depth, onehot)
+    try:
+        with open('dt-'+str(depth)+"-"+str(onehot)+'new.pkl', 'rb') as inp:
+            dt = pickle.load(inp)
+    except:
+        dt = DecisionTree(onehot=onehot)
+        # dt.get_data(train_path=)
+        dt.train()
+        save_object(dt, 'dt-'+str(depth)+"-"+str(onehot)+'new.pkl')
     dt.set_data(onehot=onehot, test_path="bank_dataset/bank_train.csv")
     dt.test()
     dt.set_data(onehot=onehot, test_path="bank_dataset/bank_test.csv")
