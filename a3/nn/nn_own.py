@@ -1,3 +1,5 @@
+# import preprocess_nn as pn
+import pandas as pd
 from datetime import time
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, f1_score
@@ -205,6 +207,20 @@ class NeuralNetwork():
         return f1
 
 
+# if __name__ == "__main__":
+#     train_data = pd.read_csv("../test.csv")
+#     features_num = len(train_data.iloc[0])-1
+#     hidden_size = [2]
+#     hidden_number = len(hidden_size)
+#     target_num = 2
+#     epochs = 1
+#     batch_size = 5
+#     learn_rate = 0.1
+#     epsilon = 1e-9
+#     nn = NeuralNetwork(features_num=features_num, hidden_number=hidden_number, hidden_size=hidden_size,
+#                        target_num=target_num, activation_type='sigmoid', m=batch_size, adaptive=False)
+#     nn.train(train_data.iloc[:, :-1].T, train_data.iloc[:, -1],
+#              learn_rate, epochs, batch_size, epsilon)
 # if __name__ == '__main__':
 #     train_data = pn.get_data(
 #         '..\poker_dataset\poker-hand-training-true-onehot.data')
