@@ -1,9 +1,34 @@
+from datetime import time
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, f1_score
+import keyboard
 import pickle
 import numpy as np
-import preprocess_nn as pn
-from numpy.core.shape_base import hstack
+import time
+# import preprocess_nn as pn
 from numpy.lib.scimath import sqrt
 np.random.seed(10)
+
+
+def draw_confusion(conf, label="linear"):
+    plt.figure()
+    plt.imshow(conf)
+    plt.title("Confusion Matrix"+label)
+    plt.colorbar()
+    my_xticks = [i for i in range(len(conf))]
+    plt.xticks(my_xticks, my_xticks)
+    my_yticks = [i for i in range(len(conf))]
+    plt.yticks(my_yticks, my_yticks)
+    plt.set_cmap("Greens")
+    plt.ylabel("True labels")
+    plt.xlabel("Predicted label")
+    # add points on the axis
+    for i in range(len(conf)):
+        for j in range(len(conf)):
+            plt.text(j, i, str(conf[i, j]), ha="center",
+                     va="center", color="black")
+    plt.savefig("confusion_matrix"+label+".png")
+    plt.close()
 
 
 def activation(a, type):
@@ -98,13 +123,16 @@ class NeuralNetwork():
             hidden_size[-1], target_num, "output", 'sigmoid', m)
         self.activation_type = activation_type
         self.adaptive = adaptive
+        self.train_time = 0
 
-    def train(self, input_vector, label, learn_rate, epochs, batch_size):
+    def train(self, input_vector, label, learn_rate, epochs, batch_size, epsilon=0.001):
         label_mat = np.zeros((self.target_num, label.shape[0]))
         for i in range(label.shape[0]):
             label_mat[int(label[i])][i] = 1
         label_mat = np.matrix(label_mat)
         label = label_mat
+        last_error = -1e9
+        time_start = time.time()
         for i in range(epochs):
             print("epoch: ", i)
             for j in range(0, input_vector.shape[1], batch_size):
@@ -128,10 +156,22 @@ class NeuralNetwork():
                     self.output_layer.update_weights(learn_rate)
                     for h in range(self.hidden_number-1, -1, -1):
                         self.hidden_layers[h].update_weights(learn_rate)
-            self.forward_pass(input_vector)
-            error = np.sum(
-                np.square(label_mat - self.output_layer.output))/input_vector.shape[1]
-            print(error)
+                self.forward_pass(input_vector_batch)
+                error = np.sum(
+                    np.square(label_mat_batch - self.output_layer.output))/input_vector_batch.shape[1]
+                # print("error: ", error)
+                # print("last_error: ", last_error)
+                # print("epsilon:", epsilon)
+                if error < epsilon or abs(last_error-error) < epsilon:
+                    self.train_time = time.time() - time_start
+                    return
+                last_error = error
+                # break when ctr+* is pressed
+                if keyboard.is_pressed('ctrl+*'):
+                    self.train_time = time.time() - time_start
+                    return
+            print("Error:", error)
+        self.train_time = time.time() - time_start
 
     def forward_pass(self, input_vector):
         last_out = None
@@ -145,50 +185,67 @@ class NeuralNetwork():
         self.output_layer.input = last_out
         return self.output_layer.predict(last_out)
 
-    def test(self, input_vector, label):
+    def test(self, input_vector, label, name):
         prediction = self.forward_pass(input_vector)
         prediction = np.array([np.argmax(i) for i in prediction.T])
-        np.savetxt('prediction.csv', prediction, delimiter=',')
         outs = np.count_nonzero(prediction == label)
-        print(outs/label.shape[0])
-        # print frequency of each class
-        print(np.unique(prediction, return_counts=True))
-        return outs
+        # confusion matrix and f1 score
+        conf_mat = confusion_matrix(label, prediction)
+        f1 = f1_score(label, prediction, average='weighted')
+        print("confusion matrix: ", conf_mat)
+        print("f1 score: ", f1)
+        draw_confusion(conf_mat, name)
+        # append confusion matrix and f1 score to file
+        with open("nn-c-results.txt", 'a') as f:
+            f.write(name + '\n')
+            f.write("Train time: "+str(self.train_time) + '\n')
+            f.write(str(conf_mat) + '\n')
+            f.write("F1 score: "+str(f1) + '\n')
+            f.write("Accuracy: "+str(outs/label.shape[0]) + '\n')
+        return f1
 
 
-if __name__ == '__main__':
-    try:
-        # read pickle model
-        nn = pickle.load(open('nn-25-sigm.pkl', 'rb'))
-        # nn = pickle.load(open('nn-100-relu.pkl', 'rb'))
-        print("model loaded")
-    except:
-        activation_type = 'relu'
-        train_data = pn.get_data(
-            'poker_dataset\poker-hand-training-true-onehot.data')
+# if __name__ == '__main__':
+#     train_data = pn.get_data(
+#         '..\poker_dataset\poker-hand-training-true-onehot.data')
+#     features_num = len(train_data.iloc[0])-1
+#     hidden_size = [5]
+#     hidden_number = len(hidden_size)
 
-        features_num = len(train_data.iloc[0])-1
-        hidden_size = [100, 100]
-        hidden_number = len(hidden_size)
+#     target_num = 10
+#     epochs = 600
+#     batch_size = 100
+#     learn_rate = 0.1
+#     epsilon = 1e-9
+#     try:
+#         # read pickle model
+#         nn = pickle.load(open('nn-5-sigm-best.pkl', 'rb'))
 
-        target_num = 10
-        epochs = 300
-        batch_size = 100
-        learn_rate = 0.1
+#         nn.train(train_data.iloc[:, :-1].T,
+#                  train_data.iloc[:, -1], learn_rate, epochs, batch_size, epsilon)
+#         # pickle.dump(nn, open('nn-100-relu.pkl', 'wb'))
+#         # nn = pickle.load(open('nn-100-relu.pkl', 'rb'))
+#         pickle.dump(nn, open('nn-5-sigm-best.pkl', 'wb'))
+#         print("model saved")
+#     except:
+#         activation_type = 'sigmoid'
+#         train_data = pn.get_data(
+#             '..\poker_dataset\poker-hand-training-true-onehot.data')
+#         nn = NeuralNetwork(features_num=features_num, hidden_number=hidden_number, hidden_size=hidden_size,
+#                            target_num=target_num, activation_type=activation_type, m=batch_size, adaptive=False)
 
-        nn = NeuralNetwork(features_num=features_num, hidden_number=hidden_number, hidden_size=hidden_size,
-                           target_num=target_num, activation_type=activation_type, m=batch_size, adaptive=True)
-
-        nn.train(train_data.iloc[:, :-1].T,
-                 train_data.iloc[:, -1], learn_rate, epochs, batch_size)
-        # pickle.dump(nn, open('nn-100-relu.pkl', 'wb'))
-        pickle.dump(nn, open('nn-25-sigm.pkl', 'wb'))
-        print("model saved")
-    # nn = pickle.load(open('nn-100-relu.pkl', 'rb'))
-    nn = pickle.load(open('nn-25-sigm.pkl', 'rb'))
-    test_data = pn.get_data('poker_dataset\poker-hand-testing-onehot.data')
-    nn.test(test_data.iloc[:, :-1].T, test_data.iloc[:, -1])
-    test_data = None
-    test_data = pn.get_data(
-        'poker_dataset\poker-hand-training-true-onehot.data')
-    nn.test(test_data.iloc[:, :-1].T, test_data.iloc[:, -1])
+#         nn.train(train_data.iloc[:, :-1].T,
+#                  train_data.iloc[:, -1], learn_rate, epochs, batch_size, epsilon)
+#         # pickle.dump(nn, open('nn-100-relu.pkl', 'wb'))
+#         pickle.dump(nn, open('nn-5-sigm-best.pkl', 'wb'))
+#         print("model saved")
+#     # nn = None
+#     # nn = pickle.load(open('nn-100-relu.pkl', 'rb'))
+#     # nn = pickle.load(open('nn-15-sigm-best.pkl', 'rb'))
+#     train_data = None
+#     test_data = pn.get_data('..\poker_dataset\poker-hand-testing-onehot.data')
+#     nn.test(test_data.iloc[:, :-1].T, test_data.iloc[:, -1])
+#     test_data = None
+#     test_data = pn.get_data(
+#         '..\poker_dataset\poker-hand-training-true-onehot.data')
+#     nn.test(test_data.iloc[:, :-1].T, test_data.iloc[:, -1])

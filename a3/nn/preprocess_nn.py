@@ -16,12 +16,17 @@ def read_data(filename='./dataset/train.csv'):
 
 
 def get_data(filename='poker_dataset\poker-hand-testing-onehot.data'):
-    dataset = pd.read_csv(filename, sep=',')
-    for col in range(len(dataset.columns)-2):
-        dataset.iloc[:, col] = (dataset.iloc[:, col] -
-                                dataset.iloc[:, col].mean())/dataset.iloc[:, col].std()
-    print(dataset.head())
-    return dataset
+    try:
+        return pd.read_csv(filename+".clean", sep=',')
+    except:
+        dataset = pd.read_csv(filename, sep=',')
+        for col in range(len(dataset.columns)-2):
+            dataset.iloc[:, col] = (dataset.iloc[:, col] -
+                                    dataset.iloc[:, col].mean())/dataset.iloc[:, col].std()
+        print(dataset.head())
+        # save data
+        pd.DataFrame(dataset).to_csv(filename+".clean", index=False)
+        return dataset
 # one hot encoding
 
 
