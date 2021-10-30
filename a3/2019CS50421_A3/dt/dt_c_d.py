@@ -96,6 +96,7 @@ def part_d():
         rf = RandomForestClassifier(criterion='entropy', bootstrap=True,
                                     oob_score=True, n_estimators=n_estimate, max_features=optimal_parameters['max_features'], min_samples_split=optimal_parameters['min_samples_split'])
         rf.fit(X_train, Y_train)
+        print(rf.oob_score_)
         n_est_train.append(rf.oob_score_)
         n_est_test.append(rf.score(X_test, Y_test))
         n_est_val.append(rf.score(X_val, Y_val))

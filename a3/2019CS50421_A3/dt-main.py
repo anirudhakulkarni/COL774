@@ -9,11 +9,12 @@ from dt import preprocess_dt as pp
 from dt import dt_c_d as dtcd
 # main function for neural network
 if __name__ == '__main__':
-    train_path = "bank_dataset/bank_train.csv"
-    test_path = "bank_dataset/bank_test.csv"
-    val_path = "bank_dataset/bank_val.csv"
-    question = sys.argv[1]
-    subpart = sys.argv[2]
+    train_path = sys.argv[1]
+    test_path = sys.argv[2]
+    val_path = sys.argv[3]
+    question = sys.argv[4]
+    subpart = sys.argv[5]
+    print("start")
     if question == 'a':
         # load data
         tree_depths_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35]

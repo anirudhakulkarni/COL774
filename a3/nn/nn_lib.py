@@ -47,11 +47,11 @@ def solve2():
     y_train = train_data.iloc[:, -1]
 
     try:
-        clf = pickle.load(open('nn_models/poker_model.pkl', 'rb'))
+        clf = pickle.load(open('nn_models/poker_models.pkl', 'rb'))
     except:
 
         clf = MLPClassifier(solver='sgd',
-                            hidden_layer_sizes=(100, 100),  activation='relu')
+                            hidden_layer_sizes=(100, 100),  activation='relu', batch_size=100)
         print("Training")
         t1 = time.time()
         clf.fit(X_train, y_train)

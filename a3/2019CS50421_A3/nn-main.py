@@ -18,7 +18,11 @@ if __name__ == '__main__':
     features_num = 85
 
     # take arguments
-    question = sys.argv[1]
+    train_path = sys.argv[1]
+    test_path = sys.argv[2]
+    question = sys.argv[3]
+    train_path = "./poker_dataset/poker-hand-training-true-onehot.data"
+    test_path = "./poker_dataset/poker-hand-testing-onehot.data"
 
     if question == 'a':
         train_path = "./poker_dataset/poker-hand-training-true.data"
