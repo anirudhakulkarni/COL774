@@ -34,6 +34,7 @@ def one_hot_encoding(X):
             X_one_hot[categories_list[cat]] = X.iloc[:, cat]
     X_one_hot['y'] = X.iloc[:, -1]
     final_colmn = X_one_hot.columns
+    print(len(X_one_hot.columns))
     return X_one_hot
 
 # save file as csv

@@ -16,3 +16,6 @@
 \n
 *.pkl
 *.clean 
+train_data
+temp_data
+test_data
